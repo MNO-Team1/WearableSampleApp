@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+	<application name="org.tizen.werabale">
+		<serviceProfile id="/sample/hello" name="TizenProvider"
+			autoLaunchAppId="org.tizen.wearable" role="provider"
+			version="1.0">
+			<supportedTransports>
+				<transport type="TRANSPORT_BT" />
+				<transport type="TRANSPORT_WIFI" />
+			</supportedTransports>
+			<serviceChannel id="104" dataRate="low" priority="low"
+				reliability="enable">
+			<serviceChannel id="105" dataRate="low" priority="low"
+				reliability="enable">
+			<serviceChannel id="107" dataRate="low" priority="low"
+				reliability="enable">
+			</serviceChannel>
+		</serviceProfile>
+	</application>
+</resources>

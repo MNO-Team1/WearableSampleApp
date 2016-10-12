@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Wearable Sample App</string>
+    <string name="connected">Wearable Connected</string>
+    <string name="disconnected">Wearable Disconnected</string>
+    <string name="tizen">Tizen</string>
+    <string name="android">Android</string>
+    <string name="both">Both</string>
+    <string name="exception_not_connected">Wearable device is not connected. Please try again</string>
+    <string name="io_exception">IO Exception for communication</string>
+    <string name="send_operation_failed">Send operation failed. Please check connection and try again.</string>
+</resources>
