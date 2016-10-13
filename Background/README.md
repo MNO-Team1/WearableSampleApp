@@ -33,6 +33,6 @@ This application has the below capabilities.
 
 ### Sample Application 
 
-![Sample App screenshot](/screenshots/application_disconnect.png "Wearable disconnected")
+![Sample App screenshot](/screenshots/application_disconnected.png "Wearable disconnected")
 ![Sample App wearable connected](/screenshots/application_connected.png "Wearable connected")
 ![Sample App with one device connected](/screenshots/application_single_wearable.png "One wearable selected")
