@@ -1,7 +1,7 @@
 # Wearable Sample Application
 This sample application demonstrates basic connection establishment between Mobile and Wearable device.
 Data can be transferred both ways. Device information will be shown on wearable and mobile device.
-This application has the below capabilities. 
+This application has the below capabilities.
 
 * Support to connect Android and Tizen wearable app simultaneously based on the availability
 * Support to send device details to both Android and Tizen wearables
@@ -10,28 +10,29 @@ This application has the below capabilities.
 * Support to respond back to mobile app even when wearable app is in background
 
 ## How to setup this project
-1). Setup Android Studio. It can be downloaded from the below location
+* Setup Android Studio. It can be downloaded from this link
     https://developer.android.com/studio/index.html
-
-2). Setup Tizen Studio. It can be downloaded from below path
+* Setup Tizen Studio. It can be downloaded from this link
     https://developer.tizen.org/ko/development/tools/download
+* Import the Android project using android studio and Tizen using tizen studio
+* Build the android mobile and wear app and install it in respective device
+* Build the Tizen app using Tizen studio and install it in Samsung Gear device
 
-3). Import the Android project using android studio and Tizen using tizen studio
-
-4). Build the android mobile and wear app and install it in respective device
-
-5). Build the Tizen app using Tizen studio and install it in Samsung Gear device
+## Packaging android wear app through android studio
+* For automatic packaging and installation of android wear apk, use Generate Signed APK option and sign mobile app with own keystore. 
+* Install the generated and signed mobile apk on phone. This will install the wear apk on the android wear automatically.
 
 ## Directory structure
-├── android
-│   ├── mobile - Android Mobile app sample application code
-│   └── wear   - Andorid Wear app sample applicaton code
-└── tizen      - Tizen Gear sample application code
-
+    .
+    ├──  android
+          ├── mobile      # Android Mobile app sample application code
+          ├── wear        # Andorid Wear app sample applicaton code
+    ├── tizen             # Tizen Gear sample application code
+    └── README.md
 ## Screenshots
 
 ### Sample Application 
 
-![Sample](/screenshots/application_disconnected.png "Wearable disconnected")
-![Sample](/screenshots/application_connected.png "Wearable connected")
-![Sample](/screenshots/application_single_wearable.png "One wearable selected")
+![Sample App screenshot](/screenshots/application_disconnect.png "Wearable disconnected")
+![Sample App wearable connected](/screenshots/application_connected.png "Wearable connected")
+![Sample App with one device connected](/screenshots/application_single_wearable.png "One wearable selected")
