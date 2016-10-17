@@ -23,12 +23,15 @@ This application has the below capabilities.
 * Install the generated and signed mobile apk on phone. This will install the wear apk on the android wear automatically.
 
 ## Directory structure
-    .
-    ├──  android
-          ├── mobile      # Android Mobile app sample application code
-          ├── wear        # Andorid Wear app sample applicaton code
-    ├── tizen             # Tizen Gear sample application code
-    └── README.md
+	.
+	├──  android
+		  ├── mobile      # Android Mobile app sample application code
+		  ├── wear        # Andorid Wear app sample applicaton code
+	├── screenshots       # App screenshots
+	├── tizen
+	      ├── app         # Tizen gear app with sample UI code
+	      ├── service     # Tizen gear app with background service
+	└── README.md
 ## Screenshots
 
 ### Sample Application 
