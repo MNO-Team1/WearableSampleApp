@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<manifest xmlns="http://tizen.org/ns/packages" api-version="2.3.1" package="org.lpademo.service" version="1.0.0">
+    <profile name="wearable"/>
+    <service-application appid="org.lpademo.service" exec="lpaservice" multiple="false" nodisplay="true" taskmanage="false" type="capp">
+        <label>lpaservice</label>
+        <icon>service.png</icon>
+        <metadata key="accessory-services-location" value="/res/xml/accessoryservices.xml"/>
+        <metadata key="launch-on-attach" value="false"/>
+    </service-application>
+    <privileges>
+        <privilege>http://developer.samsung.com/tizen/privilege/accessoryprotocol</privilege>
+        <privilege>http://tizen.org/privilege/content.write</privilege>
+    </privileges>
+</manifest>

@@ -1,5 +1,5 @@
-#ifndef __HELLO_ACCESSORY_PROVIDER_H__
-#define __HELLO_ACCESSORY_PROVIDER_H__
+#ifndef __MAIN_H__
+#define __MAIN_H__
 
 #include <app.h>
 #include <glib.h>
@@ -8,17 +8,17 @@
 #include <efl_extension.h>
 #include <dlog.h>
 
-#define TAG "WearableProvider"
+#define TAG "LpaProvider"
 
 #define NUM_OF_ITEMS 5
 
-void initialize_sap();
+
 gboolean send_data(char *message);
 void update_ui(char *data);
 gboolean find_peers(void);
 
 #if !defined(PACKAGE)
-#define PACKAGE "org.tizen.wearable"
+#define PACKAGE "org.tizen.lpademo"
 #endif
 
-#endif
+#endif //__MAIN_H__

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <resources>
-	<application name="org.tizen.werabale">
+	<application name="org.lpademo.service">
 		<serviceProfile id="/sample/hello" name="TizenProvider"
-			autoLaunchAppId="org.tizen.wearable" role="provider"
+			autoLaunchAppId="org.lpademo.service" role="provider"
 			version="1.0">
 			<supportedTransports>
 				<transport type="TRANSPORT_BT" />

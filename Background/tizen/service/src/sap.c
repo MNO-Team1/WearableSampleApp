@@ -3,9 +3,11 @@
 #include <app_common.h>
 #include <sap.h>
 #include <json-glib.h>
-#include "main.h"
+#include "ipc.h"
 #include <string.h>
 #include <system_info.h>
+#include <app.h>
+#include "defines-app.h"
 
 #define HELLO_ACC_ASPID "/sample/hello"
 #define COMMAND_ACC_CHANNELID 104
@@ -21,6 +23,9 @@ static gboolean agent_created = FALSE;
 
 static struct priv priv_data = { 0 };
 
+/*
+ * @brief Call back for on sap agent conneciton terminated
+ */
 static void on_service_connection_terminated(sap_peer_agent_h peer_agent,
 					     sap_socket_h socket,
 					     sap_service_connection_terminated_reason_e result,
@@ -40,7 +45,6 @@ static void on_service_connection_terminated(sap_peer_agent_h peer_agent,
 		break;
 	}
 
-	update_ui("Connection terminated");
 
 	sap_socket_destroy(priv_data.socket);
 	priv_data.socket = NULL;
@@ -49,6 +53,9 @@ static void on_service_connection_terminated(sap_peer_agent_h peer_agent,
 }
 
 
+/*
+ * @brief Call back for on data received
+ */
 static void on_data_recieved(sap_socket_h socket,
 			     unsigned short int channel_id,
 			     unsigned int payload_length,
@@ -65,23 +72,27 @@ static void on_data_recieved(sap_socket_h socket,
 		ret = system_info_get_platform_string(
 				"http://tizen.org/system/model_name", &value);
 		if (ret != SYSTEM_INFO_ERROR_NONE) {
-			dlog_print(DLOG_INFO, TAG, ">>>>>>>>>>>>SYSTEM_INFO_ERROR_NONE");
+			dlog_print(DLOG_INFO, TAG, "SYSTEM_INFO_ERROR_NONE");
 			return;
 		}
 
-		dlog_print(DLOG_INFO, TAG, ">>>>>>>>>>>Model name: %s", value);
+		dlog_print(DLOG_INFO, TAG, "Model name: %s", value);
 
 
 
     	sap_socket_send_data(priv_data.socket, COMMAND_ACC_CHANNELID, strlen(value), value);
     	free(value); /* Release after use */
-    	update_ui("Sent DevInfo.");
+    	//update_ui("Sent DevInfo.");
+
     }else {
-    	update_ui(buffer);
+    	send_message(buffer);
     }
 
 }
 
+/*
+ * @brief Send data
+ */
 gboolean send_data(char *message)
 {
 	int result;
@@ -89,18 +100,22 @@ gboolean send_data(char *message)
 		dlog_print(DLOG_INFO, TAG, "Sending data ");
 		result = sap_socket_send_data(priv_data.socket, COMMAND_ACC_CHANNELID, strlen(message), message);
 	} else {
-		update_ui("No service Connection");
+		//update_ui("No service Connection");
 		return FALSE;
 	}
 	return TRUE;
 
 }
 
+/*
+ * @brief sap agent set service connection requested cb
+ */
 static void on_service_connection_requested(sap_peer_agent_h peer_agent,
 					    sap_socket_h socket,
 					    sap_service_connection_result_e result,
 					    void *user_data)
 {
+
 	priv_data.socket = socket;
 	priv_data.peer_agent = peer_agent;
 
@@ -109,12 +124,14 @@ static void on_service_connection_requested(sap_peer_agent_h peer_agent,
 
 	sap_peer_agent_accept_service_connection(peer_agent);
 
-	//sap_peer_agent_set_service_connection_terminated_cb(priv_data.peer_agent, on_service_connection_terminated, user_data);
+	//sap_peer_agent_set_service_connection_terminated_cb(priv_data.peer_agent, on_service_connection_terminated, &result, user_data);
 
-	update_ui("Connection Established");
 
 }
 
+/*
+ * @brief SAP agent initialization
+ */
 static void on_agent_initialized(sap_agent_h agent,
 				 sap_agent_initialized_result_e result,
 				 void *user_data)
@@ -152,6 +169,10 @@ static void on_agent_initialized(sap_agent_h agent,
 
 }
 
+
+/*
+ * @brief connection status changed call back
+ */
 static void on_device_status_changed(sap_device_status_e status, sap_transport_type_e transport_type,
 				     void *user_data)
 {
@@ -203,6 +224,10 @@ static void on_device_status_changed(sap_device_status_e status, sap_transport_t
 	}
 }
 
+
+/*
+ * @brief  Agent initialization
+ */
 gboolean agent_initialize()
 {
 	int result = 0;
@@ -211,12 +236,15 @@ gboolean agent_initialize()
 		result = sap_agent_initialize(priv_data.agent, HELLO_ACC_ASPID, SAP_AGENT_ROLE_PROVIDER,
 					      on_agent_initialized, NULL);
 
-		dlog_print(DLOG_INFO, TAG, "SAP >>> getRegisteredServiceAgent() >>> %d", result);
+		dlog_print(DLOG_INFO, TAG, "SAP *** getRegisteredServiceAgent() >>> %d", result);
 	} while (result != SAP_RESULT_SUCCESS);
 
 	return TRUE;
 }
 
+/*
+ * @brief  initialize sap
+ */
 void initialize_sap()
 {
 	sap_agent_h agent = NULL;

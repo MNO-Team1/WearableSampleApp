@@ -1,4 +1,8 @@
 #include "main.h"
+#include "ipc.h"
+#include "defines-app.h"
+#include <message_port.h>
+#include "utils.h"
 
 typedef struct appdata {
 	Evas_Object *win;
@@ -18,34 +22,53 @@ typedef struct appdata {
 static appdata_s *global_ad;
 static appdata_s *object;
 
+/**
+ * @brief UI window delete request call back
+ */
 static void win_delete_request_cb(void *data, Evas_Object *obj, void *event_info)
 {
 	ui_app_exit();
 }
 
+/**
+ * @brief UI window delete request call back
+ */
 static void _timeout_cb(void *data, Evas_Object *obj, void *event_info)
 {
 	if (!obj) return;
 	elm_popup_dismiss(obj);
 }
 
+/**
+ * @brief UI block click call back
+ */
 static void _block_clicked_cb(void *data, Evas_Object *obj, void *event_info)
 {
 	if (!obj) return;
 	elm_popup_dismiss(obj);
 }
 
+/**
+ * @brief UI popup  hide start call back
+ */
 static void _popup_hide_cb(void *data, Evas_Object *obj, void *event_info)
 {
 	if (!obj) return;
 	elm_popup_dismiss(obj);
 }
+
+/**
+ * @brief UI popup  hide finished call back
+ */
 static void _popup_hide_finished_cb(void *data, Evas_Object *obj, void *event_info)
 {
 	if (!obj) return;
 	evas_object_del(obj);
 }
 
+/**
+ * @brief UI to show popup toastback
+ */
 static void _popup_toast_cb(Evas_Object *parent, char *string)
 {
 	Evas_Object *popup;
@@ -75,68 +98,30 @@ void update_ui(char *data)
 }
 
 
-typedef struct _item_data {
-	int index;
-	Elm_Object_Item *item;
-} item_data;
-
-static char *_gl_title_text_get(void *data, Evas_Object *obj, const char *part)
-{
-	char buf[1024];
-
-	snprintf(buf, 1023, "%s", "Wearable Demo");
-
-	return strdup(buf);
-}
-
-static char *_gl_sub_title_text_get(void *data, Evas_Object *obj, const char *part)
-{
-	char buf[1024];
-
-	snprintf(buf, 1023, "%s", "Tizen");
-
-	return strdup(buf);
-}
-
-char *main_menu_names[] = {
-	"Get Device Info.",
-	NULL
-};
-
-static char *_gl_main_text_get(void *data, Evas_Object *obj, const char *part)
-{
-	char buf[1024];
-	item_data *id = data;
-	int index = id->index;
-
-	if (!strcmp(part, "elm.text"))
-		snprintf(buf, 1023, "%s", main_menu_names[index - 1]);
-
-	return strdup(buf);
-}
-
-static void _gl_del(void *data, Evas_Object *obj)
-{
-	// FIXME: Unrealized callback can be called after this.
-	// Accessing Item_Data can be dangerous on unrealized callback.
-	item_data *id = data;
-	if (id) free(id);
-}
-
+/**
+ * @brief On button click event function
+ */
 static void btn_cb_send(void *data, Evas_Object *obj, void *event_info)
 {
 	Elm_Object_Item *it = event_info;
 	elm_genlist_item_selected_set(it, EINA_FALSE);
 
-	send_data("GETDEVINFO");
+	send_message("GET_DEVICE_INFO");
 }
 
+/*
+*@brief Set a function to be called when it of the naviframe is going to
+*        be popped.
+*/
 static Eina_Bool _naviframe_pop_cb(void *data, Elm_Object_Item *it)
 {
 	ui_app_exit();
 	return EINA_FALSE;
 }
 
+/**
+ * @brief UI List creation
+ */
 static void create_list_view(appdata_s *ad)
 {
 	Evas_Object *genlist = NULL;
@@ -201,29 +186,50 @@ static void create_list_view(appdata_s *ad)
 
 }
 
-
-
-
+/**
+ * @brief App. control call back
+ */
 static void app_control(app_control_h app_control, void *data)
 {
 	/* Handle the launch request. */
+	dlog_print(DLOG_INFO, TAG, "<<<<<<<<<<<app_control>>>>>>>>>>>");
 }
 
+/**
+ * @brief App. pause call back
+ */
 static void app_pause(void *data)
 {
 	/* Take necessary actions when application becomes invisible. */
+	dlog_print(DLOG_INFO, TAG, "<<<<<<<<<<<app_pause>>>>>>>>>>>");
 }
 
+/**
+ * @brief App. resume call back
+ */
 static void app_resume(void *data)
 {
 	/* Take necessary actions when application becomes visible. */
+	dlog_print(DLOG_INFO, TAG, "<<<<<<<<<<<app_resume>>>>>>>>>>>");
+	//
+	if (test_check_remote_port()){
+		dlog_print(DLOG_ERROR, TAG, "remote port service found");
+		//update_ui("remote port service found");
+	}
 }
 
+/**
+ * @brief App. termination call back
+ */
 static void app_terminate(void *data)
 {
 	/* Release all resources. */
+	dlog_print(DLOG_INFO, TAG, "<<<<<<<<<<<app_terminate>>>>>>>>>>>");
 }
 
+/**
+ * @brief low battery call back
+ */
 static void ui_app_lang_changed(app_event_info_h event_info, void *user_data)
 {
 	/*APP_EVENT_LANGUAGE_CHANGED*/
@@ -234,88 +240,53 @@ static void ui_app_lang_changed(app_event_info_h event_info, void *user_data)
 	return;
 }
 
+/**
+ * @brief low battery call back
+ */
 static void ui_app_orient_changed(app_event_info_h event_info, void *user_data)
 {
 	/*APP_EVENT_DEVICE_ORIENTATION_CHANGED*/
 	return;
 }
 
+/**
+ * @brief region change cal lback
+ */
 static void ui_app_region_changed(app_event_info_h event_info, void *user_data)
 {
 	/*APP_EVENT_REGION_FORMAT_CHANGED*/
 }
 
+/**
+ * @brief low battery call back
+ */
 static void ui_app_low_battery(app_event_info_h event_info, void *user_data)
 {
 	/*APP_EVENT_LOW_BATTERY*/
 }
 
+/**
+ * @brief low memory call back
+ */
 static void ui_app_low_memory(app_event_info_h event_info, void *user_data)
 {
 	/*APP_EVENT_LOW_MEMORY*/
 }
-//===
 
-static void _reject_cb(void *data, Evas_Object *obj, void *event_info)
-{
-	if (!obj) return;
-	evas_object_del(data);
-}
-
-static void _accept_cb(void *data, Evas_Object *obj, void *event_info)
-{
-	if (!obj) return;
-	evas_object_del(data);
-}
-
-static void popup_title_text_check_button(void *data, Evas_Object *obj, void *event_info)
-{
-	dlog_print(DLOG_INFO, TAG, "# popup_title_text_check_button*****4444*****");
-	Evas_Object *popup;
-	Evas_Object *btn;
-	Evas_Object *icon;
-	Evas_Object *layout;
-	struct appdata *ad = (struct appdata *)data;
-
-	popup = elm_popup_add(ad->naviframe);
-	elm_object_style_set(popup, "circle");
-	//uxt_popup_set_rotary_event_enabled(popup, EINA_TRUE);
-	evas_object_size_hint_weight_set(popup, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-	eext_object_event_callback_add(popup, EEXT_CALLBACK_BACK, _popup_hide_cb, NULL);
-	evas_object_smart_callback_add(popup, "dismissed", _popup_hide_finished_cb, NULL);
-
-	layout = elm_layout_add(popup);
-	elm_layout_theme_set(layout, "layout", "popup", "content/circle/buttons2");
-	elm_object_part_text_set(layout, "elm.text.title", "");
-
-	btn = elm_button_add(popup);
-	elm_object_style_set(btn, "popup/circle/left");
-	evas_object_size_hint_weight_set(btn, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-	elm_object_part_content_set(popup, "button1", btn);
-	evas_object_smart_callback_add(btn, "clicked", _accept_cb, popup);
-
-	btn = elm_button_add(popup);
-	elm_object_style_set(btn, "popup/circle/right");
-	evas_object_size_hint_weight_set(btn, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-	elm_object_part_content_set(popup, "button2", btn);
-	evas_object_smart_callback_add(btn, "clicked", _reject_cb, popup);
-
-	evas_object_show(popup);
-	global_ad->icon = icon;
-	global_ad->layout = layout;
-	global_ad->popup = popup;
-	global_ad->btn = btn;
-}
-
+/**
+ * @brief window press_back call back
+ */
 static void win_back_cb(void *data, Evas_Object *obj, void *event_info)
 {
 	appdata_s *ad = data;
 	elm_win_lower(ad->win);
 }
 
+/**
+ * @brief Base ui creation function
+ */
 static void create_base_gui(appdata_s *ad)
 {
-	Elm_Object_Item *nf_it = NULL;
 
 	/* Window */
 	ad->win = elm_win_util_standard_add(PACKAGE, PACKAGE);
@@ -350,27 +321,35 @@ static void create_base_gui(appdata_s *ad)
 	evas_object_show(ad->win);
 }
 
-
+/**
+ * @brief App. create call back
+ */
 static bool app_create(void *data)
 {
+	dlog_print(DLOG_INFO, TAG, "<<<<<<<<<<<app_create>>>>>>>>>>>");
 	/* Hook to take necessary actions before main event loop starts
 	   Initialize UI resources and application's data
 	   If this function returns true, the main loop of application starts
 	   If this function returns false, the application is terminated */
 	object = data;
 	create_base_gui(object);
-	initialize_sap();
-
+	init_register_local_port();
 	return TRUE;
 }
 
+/**
+ * @brief Main Functions
+ */
 int main(int argc, char *argv[])
 {
 	appdata_s ad = { 0, };
 	int ret = 0;
+	int result = 0;
 
 	ui_app_lifecycle_callback_s event_callback = { 0, };
 	app_event_handler_h handlers[5] = { NULL, };
+
+	dlog_print(DLOG_INFO, TAG, "<<<<<<<<<<<MAIN>>>>>>>>>>>");
 
 	event_callback.create = app_create;
 	event_callback.terminate = app_terminate;
@@ -390,6 +369,7 @@ int main(int argc, char *argv[])
 		dlog_print(DLOG_ERROR, TAG, "ui_app_main() is failed. err = %d", ret);
 	}
 
-	return ret;
+
+	return result;
 }
 
