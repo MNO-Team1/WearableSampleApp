@@ -14,6 +14,7 @@ import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.Wearable;
 import com.samsung.mno.wearable.App;
 import com.samsung.mno.wearable.common.Constants;
+import com.samsung.mno.wearable.common.Utils;
 import com.samsung.mno.wearable.common.WearableException;
 import com.samsung.mno.wearable.connection.DefaultConnection;
 import com.samsung.mno.wearable.connection.ISendResult;
@@ -27,7 +28,6 @@ import java.util.Set;
 public class AndroidConnection extends DefaultConnection {
     private static final String TAG = AndroidConnection.class.getSimpleName();
     private GoogleApiClient mGoogleClient;
-    private static String WEARABLE_CAPABILITY_NAME = "wearable";
     private AndroidConnectionThread mSendDataThread;
 
     public AndroidConnection(final Context context) {
@@ -61,6 +61,12 @@ public class AndroidConnection extends DefaultConnection {
         }
     }
 
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        mGoogleClient.disconnect();
+        mConnectionChange = null;
+    }
 
     /**
      * Connection Callbacks for Android wearable connections. Provides informaiton related to
@@ -72,26 +78,26 @@ public class AndroidConnection extends DefaultConnection {
         @Override
         public void onConnected(Bundle bundle) {
             Log.i(TAG, ">> onConnected <<");
-            Wearable.CapabilityApi.addCapabilityListener(mGoogleClient, this, WEARABLE_CAPABILITY_NAME);
+            Wearable.CapabilityApi.addCapabilityListener(mGoogleClient, this, Utils.getCapability(mContext));
             validateWearConnect();
         }
 
         @Override
         public void onConnectionSuspended(int i) {
             Log.i(TAG, ">> onConnectionSuspended <<");
-            Wearable.CapabilityApi.removeCapabilityListener(mGoogleClient, this, WEARABLE_CAPABILITY_NAME);
+            Wearable.CapabilityApi.removeCapabilityListener(mGoogleClient, this, Utils.getCapability(mContext));
         }
 
         @Override
         public void onConnectionFailed(ConnectionResult connectionResult) {
             Log.i(TAG, ">> onConnectionFailed <<");
-            Wearable.CapabilityApi.removeCapabilityListener(mGoogleClient, this, WEARABLE_CAPABILITY_NAME);
+            Wearable.CapabilityApi.removeCapabilityListener(mGoogleClient, this, Utils.getCapability(mContext));
             validateWearConnect();
         }
 
         private void validateWearConnect() {
             Wearable.CapabilityApi.getCapability(
-                    mGoogleClient, WEARABLE_CAPABILITY_NAME,
+                    mGoogleClient, Utils.getCapability(mContext),
                     CapabilityApi.FILTER_REACHABLE).setResultCallback(new ResultCallback<CapabilityApi.GetCapabilityResult>() {
                 @Override
                 public void onResult(@NonNull CapabilityApi.GetCapabilityResult getCapabilityResult) {
@@ -103,7 +109,7 @@ public class AndroidConnection extends DefaultConnection {
 
                     Set<Node> nodes = capabilityInfo.getNodes();
                     if (null != nodes && nodes.size() > 0) {
-                        Log.i(TAG, ">>> Targeted wear is connected <<< ");
+                        Log.i(TAG, ">>> Android  wear is connected <<< ");
                         mWearConnected = true;
                         updateConnectionChange();
                         return;

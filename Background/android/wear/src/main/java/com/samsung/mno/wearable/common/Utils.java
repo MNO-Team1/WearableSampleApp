@@ -11,10 +11,6 @@ import com.samsung.mno.wearable.R;
 
 public class Utils {
 
-    public static void showToast(final Context context, final String data) {
-        Toast.makeText(context, data, Toast.LENGTH_SHORT).show();
-    }
-
     public static String getCapability(Context context) {
         String[] array = context.getResources().getStringArray(R.array.android_wear_capabilities);
         if (array != null && array.length != 0) {

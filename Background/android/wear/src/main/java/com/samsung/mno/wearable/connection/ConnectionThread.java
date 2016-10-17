@@ -13,10 +13,11 @@ import com.google.android.gms.wearable.CapabilityInfo;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.Wearable;
+import com.samsung.mno.wearable.App;
+import com.samsung.mno.wearable.common.Utils;
+import com.samsung.mno.wearable.common.WearConstants;
 
 import java.util.Set;
-
-import com.samsung.mno.wearable.common.WearConstants;
 
 /**
  * Created by kkumar1 on 8/19/16.
@@ -64,7 +65,7 @@ public class ConnectionThread extends HandlerThread {
 
                     CapabilityApi.GetCapabilityResult capabilityResult =
                             Wearable.CapabilityApi.getCapability(
-                                    mGoogleClient, WearConstants.WEARABLE_CAPABILITY,
+                                    mGoogleClient, Utils.getCapability(App.getAppContext()),
                                     CapabilityApi.FILTER_REACHABLE).await();
 
                     CapabilityInfo capabilityInfo = capabilityResult.getCapability();

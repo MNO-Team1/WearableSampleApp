@@ -15,6 +15,7 @@ import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.Wearable;
 import com.samsung.mno.wearable.App;
 import com.samsung.mno.wearable.common.Constants;
+import com.samsung.mno.wearable.common.Utils;
 import com.samsung.mno.wearable.common.WearableException;
 import com.samsung.mno.wearable.connection.ISendResult;
 
@@ -77,7 +78,7 @@ public class AndroidConnectionThread extends HandlerThread {
 
                     CapabilityApi.GetCapabilityResult capabilityResult =
                             Wearable.CapabilityApi.getCapability(
-                                    mGoogleClient, Constants.WEARABLE_CAPABILITY,
+                                    mGoogleClient, Utils.getCapability(App.getAppContext()),
                                     CapabilityApi.FILTER_REACHABLE).await();
 
                     CapabilityInfo capabilityInfo = capabilityResult.getCapability();

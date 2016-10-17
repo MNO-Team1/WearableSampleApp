@@ -25,239 +25,159 @@ package com.samsung.mno.wearable.connection.tizen;
 
 import android.content.Intent;
 import android.os.Binder;
-import android.os.Build;
-import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.samsung.android.sdk.SsdkUnsupportedException;
 import com.samsung.android.sdk.accessory.SA;
 import com.samsung.android.sdk.accessory.SAAgent;
 import com.samsung.android.sdk.accessory.SAPeerAgent;
 import com.samsung.android.sdk.accessory.SASocket;
-import com.samsung.android.sdk.accessoryfiletransfer.SAFileTransfer;
-import com.samsung.android.sdk.accessoryfiletransfer.SAFileTransfer.EventListener;
-import com.samsung.android.sdk.accessoryfiletransfer.SAft;
 import com.samsung.mno.wearable.App;
 import com.samsung.mno.wearable.common.Constants;
+import com.samsung.mno.wearable.common.Utils;
 import com.samsung.mno.wearable.common.WearableException;
 import com.samsung.mno.wearable.connection.ISendResult;
+import com.samsung.mno.wearable.data.DeviceInfo;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 /**
  * Created by chait.reddy on 8/19/16.
  */
 public class TizenService extends SAAgent {
     private static final String TAG = TizenService.class.getSimpleName();
-    private static final int COMMAND_CHANNEL_ID = 104;
     private static final int OBJECT_CHANNEL_ID = 105;
-    private static final Class<ServiceConnection> SASOCKET_CLASS = ServiceConnection.class;
     private final IBinder mBinder = new LocalBinder();
-    private ServiceConnection mConnectionHandler = null;
-    Handler mHandler = new Handler();
-    private SAPeerAgent mPeerAgent = null;
-    private IPeerConnectivityCB mPeerconnectivityAction = null;
-    private SAFileTransfer mSAFileTransfer = null;
-    private EventListener mCallback = null;
+    private ITizenConnectionCb mConnectionCb = null;
+    HashMap<String, ServiceConnection> mConnections = new HashMap<>();
 
     public TizenService() {
-        super(TAG, SASOCKET_CLASS);
+        super(TAG, ServiceConnection.class);
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.i(TAG, "onCreate: ");
         SA mSAAccessory = new SA();
-        SAft saft = new SAft();
         try {
             mSAAccessory.initialize(this);
-            saft.initialize(this);
         } catch (SsdkUnsupportedException e) {
-            // try to handle SsdkUnsupportedException
-            if (processUnsupportedException(e) == true) {
-                return;
-            }
+            e.printStackTrace();
         } catch (Exception e1) {
             e1.printStackTrace();
-            /*
-             * Your application can not use Samsung Accessory SDK. Your application should work smoothly
-             * without using this SDK, or you may want to notify user and close your application gracefully
-             * (release resources, stop Service threads, close UI thread, etc.)
-             */
             stopSelf();
         }
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        Log.i(TAG, "onBind: ");
         return mBinder;
     }
 
     @Override
-    public void onDestroy() {
-        Log.i(TAG, "onDestroy: ");
-        try {
-            mSAFileTransfer.close();
-            mSAFileTransfer = null;
-        } catch (RuntimeException e) {
-            Log.e(TAG, e.getMessage());
+    protected void onFindPeerAgentResponse(SAPeerAgent saPeerAgent, int result) {
+        Log.i(TAG, "onFindPeerAgentResponse " + saPeerAgent);
+        if (saPeerAgent == null) {
+            return;
         }
-        super.onDestroy();
-        Log.i(TAG, "FileTransferSender Service is Stopped.");
+        requestServiceConnection(saPeerAgent);
+    }
+
+    public void findAgents() {
+        findPeerAgents();
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        return START_STICKY;
+    protected void onServiceConnectionResponse(SAPeerAgent saPeerAgent, SASocket saSocket, int i) {
+        super.onServiceConnectionResponse(saPeerAgent, saSocket, i);
+        Log.i(TAG, "onServiceConnectionResponse overloaded=" + statusToString(i));
     }
 
     @Override
-    protected void onFindPeerAgentsResponse(SAPeerAgent[] peerAgents, int result) {
-        Log.i(TAG, "onFindPeerAgentsResponse: " + result);
-        if ((result == SAAgent.PEER_AGENT_FOUND) && (peerAgents != null)) {
-            Log.i(TAG, "PEER_AGENT_FOUND: " + result);
-            for (SAPeerAgent peerAgent : peerAgents) {
-                requestServiceConnection(peerAgent);
-                mPeerAgent = peerAgent;
-            }
-        } else if (result == SAAgent.FINDPEER_DEVICE_NOT_CONNECTED) {
-            Toast.makeText(getApplicationContext(), "FINDPEER_DEVICE_NOT_CONNECTED", Toast.LENGTH_LONG).show();
-        } else if (result == SAAgent.FINDPEER_SERVICE_NOT_FOUND) {
-            Toast.makeText(getApplicationContext(), "FINDPEER_SERVICE_NOT_FOUND", Toast.LENGTH_LONG).show();
-        } else {
-            Toast.makeText(getApplicationContext(), "No peer found", Toast.LENGTH_LONG).show();
+    protected void onServiceConnectionResponse(SASocket saSocket, int result) {
+        Log.i(TAG, "onServiceConnectionResponse=" + statusToString(result));
+        ServiceConnection connection = (ServiceConnection) saSocket;
+        switch (result) {
+            case CONNECTION_SUCCESS:
+                connection.setPeerId(connection.getConnectedPeerAgent().getPeerId());
+                mConnections.put(
+                        connection.getPeerId(),
+                        connection);
+                mConnectionCb.onConnectionChange(
+                        connection.getPeerId(),
+                        true);
+                break;
+            case CONNECTION_ALREADY_EXIST:
+                connection.setPeerId(connection.getConnectedPeerAgent().getPeerId());
+                mConnections.put(
+                        connection.getPeerId(),
+                        connection);
+                mConnectionCb.onConnectionChange(
+                        connection.getPeerId(),
+                        true);
+                break;
+            default:
+                Utils.showToast(App.getAppContext(), "onServiceConnectionResponse=" + result);
+                break;
         }
     }
 
-    @Override
-    protected void onServiceConnectionRequested(SAPeerAgent peerAgent) {
-        Log.i(TAG, "onServiceConnectionRequested: ");
-        if (peerAgent == null) {
-            Toast.makeText(getBaseContext(), "onServiceConnectionRequested mPeerAgent == null", Toast.LENGTH_SHORT).show();
+    /**
+     * Converts a result code from an attempt to establish a connection with a peer to a string
+     *
+     * @param result
+     * @return
+     */
+    public static String statusToString(int result) {
+        switch (result) {
+            case CONNECTION_ALREADY_EXIST:
+                return "connection already exists";
+            case CONNECTION_FAILURE_DEVICE_UNREACHABLE:
+                return "connection failure device unreachable";
+            case CONNECTION_FAILURE_INVALID_PEERAGENT:
+                return "connection failure invalid peer agent";
+            case CONNECTION_FAILURE_NETWORK:
+                return "connection failure network";
+            case CONNECTION_FAILURE_PEERAGENT_NO_RESPONSE:
+                return "connection failure peer agent no response";
+            case CONNECTION_FAILURE_PEERAGENT_REJECTED:
+                return "connection failure peer agent rejected";
+            case CONNECTION_FAILURE_SERVICE_LIMIT_REACHED:
+                return "connection failure service limit reached";
+            case ERROR_CONNECTION_INVALID_PARAM:
+                return "error connection invalid param";
+            case ERROR_FATAL:
+                return "error fatal";
+            case ERROR_SDK_NOT_INITIALIZED:
+                return "error sdk not initialized";
+            case CONNECTION_SUCCESS:
+                return "Connection success";
         }
-        Log.i(TAG, "onServiceConnectionRequested ");
-        if (peerAgent != null) {
-            acceptServiceConnectionRequest(peerAgent);
-        }
+        return "unknown status (" + result + ")";
     }
 
-    @Override
-    protected void onServiceConnectionResponse(SAPeerAgent peerAgent, SASocket socket, int result) {
-        Log.i(TAG, "onServiceConnectionResponse: " + result);
-        if (result == SAAgent.CONNECTION_SUCCESS) {
-            this.mConnectionHandler = (ServiceConnection) socket;
-            this.mPeerconnectivityAction.connect();
-        } else if (result == SAAgent.CONNECTION_ALREADY_EXIST) {
-            Toast.makeText(getBaseContext(), "CONNECTED TO TIZEN", Toast.LENGTH_LONG).show();
-        } else if (result == SAAgent.CONNECTION_DUPLICATE_REQUEST) {
-            Toast.makeText(getBaseContext(), "CONNECTION_DUPLICATE_REQUEST", Toast.LENGTH_LONG).show();
-        } else {
-            Toast.makeText(getBaseContext(), "", Toast.LENGTH_LONG).show();
+    /**
+     * Converts an error code to a string value
+     *
+     * @param errorCode A connection lost error code
+     * @return
+     */
+    public static String errorToString(int errorCode) {
+        switch (errorCode) {
+            case SASocket.CONNECTION_LOST_PEER_DISCONNECTED:
+                return "CONNECTION_LOST_PEER_DISCONNECTED (" + errorCode + ")";
+            case SASocket.CONNECTION_LOST_UNKNOWN_REASON:
+                return "CONNECTION_LOST_UNKNOWN_REASON (" + errorCode + ")";
+            case SASocket.CONNECTION_LOST_DEVICE_DETACHED:
+                return "CONNECTION_LOST_DEVICE_DETACHED (" + errorCode + ")";
+            case SASocket.CONNECTION_LOST_RETRANSMISSION_FAILED:
+                return "CONNECTION_LOST_RETRANSMISSION_FAILED (" + errorCode + ")";
+            case SASocket.ERROR_FATAL:
+                return "ERROR_FATAL (" + errorCode + ")";
         }
-    }
-
-    @Override
-    protected void onError(SAPeerAgent peerAgent, String errorMessage, int errorCode) {
-        Log.i(TAG, "onError: ");
-        super.onError(peerAgent, errorMessage, errorCode);
-    }
-
-    @Override
-    protected void onPeerAgentsUpdated(SAPeerAgent[] peerAgents, int result) {
-        Log.i(TAG, "onPeerAgentsUpdated: ");
-        final SAPeerAgent[] peers = peerAgents;
-        final int status = result;
-        mHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (peers != null) {
-                    if (status == SAAgent.PEER_AGENT_AVAILABLE) {
-                        Toast.makeText(getApplicationContext(), "PEER_AGENT_AVAILABLE", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(getApplicationContext(), "PEER_AGENT_UNAVAILABLE", Toast.LENGTH_LONG).show();
-                    }
-                }
-            }
-        });
-    }
-
-    class SendResult implements ISendResult {
-        @Override
-        public void onSendResult(int requestType, int result, int deviceType, WearableException exception) {
-
-        }
-    }
-
-    public class ServiceConnection extends SASocket {
-        public ServiceConnection() {
-            super(ServiceConnection.class.getName());
-        }
-
-        @Override
-        public void onError(int channelId, String errorMessage, int errorCode) {
-            Log.i(TAG, "onError111: ");
-        }
-
-        @Override
-        public void onReceive(int channelId, byte[] data) {
-            Log.i(TAG, "onReceive: ");
-            if (null == mConnectionHandler) {
-                return;
-            }
-            final String message = new String(data);
-            if (message.equals("GETDEVINFO")) {
-                sendObject("Android :: " + getDeviceName(), new SendResult());
-            } else {
-
-                Toast.makeText(getApplicationContext(), "Connected Tizen model is :: " + message, Toast.LENGTH_LONG).show();
-
-/*            new Thread(new Runnable() {
-                public void run() {
-                    try {
-                        mConnectionHandler.send(COMMAND_CHANNEL_ID, message.getBytes());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }).start();*/
-            }
-        }
-
-        @Override
-        protected void onServiceConnectionLost(int reason) {
-            Log.i(TAG, "onServiceConnectionLost: ");
-            Toast.makeText(getApplicationContext(), "Connection Lost", Toast.LENGTH_LONG).show();
-            closeConnection();
-            mPeerconnectivityAction.disconnect();
-            mPeerAgent = null;
-        }
-    }
-
-    public String getDeviceName() {
-        String manufacturer = Build.MANUFACTURER;
-        String model = Build.MODEL;
-        if (model.startsWith(manufacturer)) {
-            return capitalize(model);
-        } else {
-            return capitalize(manufacturer) + " " + model;
-        }
-    }
-
-
-    private String capitalize(String s) {
-        if (s == null || s.length() == 0) {
-            return "";
-        }
-        char first = s.charAt(0);
-        if (Character.isUpperCase(first)) {
-            return s;
-        } else {
-            return Character.toUpperCase(first) + s.substring(1);
-        }
+        return "UNKNOWN (" + errorCode + ")";
     }
 
     public class LocalBinder extends Binder {
@@ -267,14 +187,86 @@ public class TizenService extends SAAgent {
         }
     }
 
-    public void findPeers() {
-        findPeerAgents();
+    /**
+     * Gets the connection object associated with a given peer id.
+     *
+     * @param peerId The peer id to find.
+     * @return Returns null if no peer id is found.
+     */
+    public ServiceConnection getConnection(String peerId) {
+        return mConnections.get(peerId);
+    }
+
+    public void registerConnectionCb(ITizenConnectionCb cb) {
+        this.mConnectionCb = cb;
+    }
+
+    public class SenderBinder extends Binder {
+        public TizenService getService() {
+            return TizenService.this;
+        }
+    }
+
+    /**
+     *
+     */
+    class SendResult implements ISendResult {
+        @Override
+        public void onSendResult(int requestType, int result, int deviceType, WearableException exception) {
+
+        }
+    }
+
+    /**
+     * SASocket connection
+     */
+    public class ServiceConnection extends SASocket {
+        private String mPeerId;
+
+        public String getPeerId() {
+            return mPeerId;
+        }
+
+        public void setPeerId(String peerId) {
+            mPeerId = peerId;
+        }
+
+        public ServiceConnection() {
+            super(ServiceConnection.class.getName());
+            Log.i(TAG, "ServiceConnection Constructor");
+        }
+
+        @Override
+        public void onError(int channelId, String errorString, int error) {
+            Log.e(TAG, errorString + " (" + error + ")");
+        }
+
+        @Override
+        public void onReceive(int channelId, byte[] data) {
+            Log.i(TAG, "onReceive: ");
+            final String message = new String(data);
+            if (Constants.GET_DEVICE_INFO.equals(message)) {
+                sendObject("Android :: " + DeviceInfo.getDetails(), new SendResult());
+            } else {
+                Utils.showToast(getApplicationContext(), "Connected Tizen model is :: " + message);
+            }
+        }
+
+        @Override
+        protected void onServiceConnectionLost(int reason) {
+            Log.i(TAG, "onServiceConnectionLost: ");
+            Utils.showToast(getApplicationContext(), "Connection Lost");
+            final String peerId = getPeerId();
+            mConnections.remove(peerId);
+            mConnectionCb.onConnectionChange(peerId, !mConnections.isEmpty());
+        }
     }
 
     public void sendObject(final String content, ISendResult result) {
         byte[] data = content.getBytes();
         Log.i(TAG, "sendObject: ");
-        if (mConnectionHandler == null) {
+
+        if (mConnections.isEmpty()) {
             result.onSendResult(Constants.JSON_REQUEST,
                     Constants.FAILURE,
                     Constants.TIZEN_GEAR,
@@ -283,71 +275,25 @@ public class TizenService extends SAAgent {
         }
 
         try {
-            mConnectionHandler.send(OBJECT_CHANNEL_ID, data);
-            result.onSendResult(Constants.JSON_REQUEST,
-                    Constants.SUCCESS,
-                    Constants.TIZEN_GEAR,
-                    null);
+            for (ServiceConnection conn : mConnections.values()) {
+                if (conn.isConnected()) {
+                    conn.send(OBJECT_CHANNEL_ID, data);
+                    result.onSendResult(Constants.JSON_REQUEST,
+                            Constants.SUCCESS,
+                            Constants.TIZEN_GEAR,
+                            null);
+                } else {
+                    result.onSendResult(Constants.JSON_REQUEST,
+                            Constants.FAILURE,
+                            Constants.TIZEN_GEAR,
+                            new WearableException(App.getAppContext(), WearableException.DEVICE_NOT_CONNECTED));
+                }
+            }
         } catch (IOException e) {
             result.onSendResult(Constants.JSON_REQUEST,
                     Constants.FAILURE,
                     Constants.TIZEN_GEAR,
                     new WearableException(App.getAppContext(), WearableException.IO_EXCEPTION));
-        }
-    }
-
-
-    public boolean closeConnection() {
-        Log.i(TAG, "closeConnection: ");
-        if (mConnectionHandler != null) {
-            mConnectionHandler.close();
-            mConnectionHandler = null;
-            return true;
-        } else {
-            return false;
-        }
-
-    }
-
-    private boolean processUnsupportedException(SsdkUnsupportedException e) {
-        Log.i(TAG, "processUnsupportedException: ");
-        e.printStackTrace();
-        int errType = e.getType();
-        if (errType == SsdkUnsupportedException.VENDOR_NOT_SUPPORTED
-                || errType == SsdkUnsupportedException.DEVICE_NOT_SUPPORTED) {
-            /*
-             * Your application can not use Samsung Accessory SDK. You application should work smoothly
-             * without using this SDK, or you may want to notify user and close your app gracefully (release
-             * resources, stop Service threads, close UI thread, etc.)
-             */
-            stopSelf();
-        } else if (errType == SsdkUnsupportedException.LIBRARY_NOT_INSTALLED) {
-            Log.e(TAG, "You need to install Samsung Accessory SDK to use this application.");
-        } else if (errType == SsdkUnsupportedException.LIBRARY_UPDATE_IS_REQUIRED) {
-            Log.e(TAG, "You need to update Samsung Accessory SDK to use this application.");
-        } else if (errType == SsdkUnsupportedException.LIBRARY_UPDATE_IS_RECOMMENDED) {
-            Log.e(TAG, "We recommend that you update your Samsung Accessory SDK before using this application.");
-            return false;
-        }
-        return true;
-    }
-
-    public void connect() {
-        if (mPeerAgent != null) {
-            requestServiceConnection(mPeerAgent);
-        } else {
-            super.findPeerAgents();
-        }
-    }
-
-
-    public void registerPeerDisconnectCB(IPeerConnectivityCB cb) {
-        this.mPeerconnectivityAction = cb;
-    }
-
-    public class SenderBinder extends Binder {
-        public TizenService getService() {
-            return TizenService.this;
         }
     }
 }

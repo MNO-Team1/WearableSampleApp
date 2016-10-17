@@ -10,7 +10,6 @@ public class Constants {
     public static final int SUCCESS = 0;
     public static final int FAILURE = -1;
     public static final int SEND_MESSAGE = 1;
-    public static String WEARABLE_CAPABILITY = "wearable";
     public static final String SEND_MESSAGE_PATH = "/message";
     public static final String GET_DEVICE_INFO = "GET_DEVICE_INFO";
 }

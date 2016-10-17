@@ -7,13 +7,13 @@ import android.os.Build;
  */
 public class DeviceInfo {
 
-    private String mDeviceID = Build.ID;
-    private String mDeviceHw = Build.HARDWARE;
-    private String mDeviceBuildInfo = Build.DISPLAY;
-    private String mDeviceDetails = Build.MANUFACTURER + " " + Build.MODEL;
+    private static String mDeviceID = Build.ID;
+    private static String mDeviceHw = Build.HARDWARE;
+    private static String mDeviceBuildInfo = Build.DISPLAY;
+    private static String mDeviceDetails = Build.MANUFACTURER + " " + Build.MODEL;
 
-    @Override
-    public String toString() {
+    public static String getDetails() {
         return new String("Device-ID=" + mDeviceID + " Hardware Version=" + mDeviceHw + " BuildInfo=" + mDeviceBuildInfo + " Model=" + mDeviceDetails);
     }
+
 }

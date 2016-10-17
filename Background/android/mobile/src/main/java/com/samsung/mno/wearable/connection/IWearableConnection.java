@@ -22,17 +22,15 @@ public interface IWearableConnection {
     void registerConnectionChange(IConnectionChange connectionCb);
 
     /**
-     * Remove callback registered for connection change events
-     *
-     * @param connectionCb connection change callback
-     */
-    void unRegisterConnectionChange(IConnectionChange connectionCb);
-
-    /**
      * Returns a device type used for connection
      *
      * @return . WearableConstant.TIZEN_GEAR or WearableConstant.ANDROID_WEAR
      */
     int getConnectionType();
+
+    /**
+     * Cleanup of respective adapters
+     */
+    void cleanup();
 
 }

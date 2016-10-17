@@ -1,7 +1,6 @@
 package com.samsung.mno.wearable.connection;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.util.Log;
@@ -9,18 +8,12 @@ import android.util.Log;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.wearable.Asset;
 import com.google.android.gms.wearable.CapabilityApi;
 import com.google.android.gms.wearable.CapabilityInfo;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.Wearable;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by kkumar1 on 8/19/16.
@@ -118,11 +111,11 @@ public class Connection {
 
                     Set<Node> nodes = capabilityInfo.getNodes();
                     if (null != nodes && nodes.size() > 0) {
-                        Log.i(TAG, ">>> Targeted wear is connected <<< ");
+                        Log.i(TAG, ">>> Android wear is connected <<< ");
                         mWearConnected = true;
                         return;
                     }
-                    Log.i(TAG, ">>> All wears dis-connected <<< ");
+                    Log.i(TAG, ">>> Android device disconnected <<< ");
                     mWearConnected = false;
                 }
             });

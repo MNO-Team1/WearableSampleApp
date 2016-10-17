@@ -2,14 +2,13 @@ package com.samsung.mno.wearable.connection.android.receiver;
 
 import android.os.Handler;
 import android.util.Log;
-import android.widget.Toast;
 
+import com.google.android.gms.fitness.data.Device;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.WearableListenerService;
-import com.samsung.mno.wearable.App;
 import com.samsung.mno.wearable.common.Constants;
-import com.samsung.mno.wearable.common.WearableException;
 import com.samsung.mno.wearable.common.Utils;
+import com.samsung.mno.wearable.common.WearableException;
 import com.samsung.mno.wearable.connection.ISendResult;
 import com.samsung.mno.wearable.connection.WearableManager;
 import com.samsung.mno.wearable.data.DeviceInfo;
@@ -29,11 +28,8 @@ public class DataListenerService extends WearableListenerService {
                     + " result=" + result
                     + " " + ((exception != null) ? exception.getDescription() : null));
             if (result == Constants.SUCCESS) {
-                Utils.showToast(App.getAppContext(), "Success");
                 return;
             }
-
-            Utils.showToast(App.getAppContext(), exception.getDescription());
         }
     }
 
@@ -43,8 +39,8 @@ public class DataListenerService extends WearableListenerService {
         if (messageEvent.getData() != null) {
             String data = new String(messageEvent.getData());
 
-            if(Constants.GET_DEVICE_INFO.equals(data)) {
-                WearableManager.getInstance(getApplicationContext()).send(new DeviceInfo().toString(), mResult);
+            if (Constants.GET_DEVICE_INFO.equals(data)) {
+                WearableManager.getInstance(getApplicationContext()).send(DeviceInfo.getDetails(), mResult);
             } else {
                 Log.d(TAG, "message from wear : " + data);
                 showMessage(data);
@@ -58,7 +54,7 @@ public class DataListenerService extends WearableListenerService {
         mHandler.post(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(getApplicationContext(), data, Toast.LENGTH_LONG).show();
+                Utils.showToast(getApplicationContext(), data);
             }
         });
     }

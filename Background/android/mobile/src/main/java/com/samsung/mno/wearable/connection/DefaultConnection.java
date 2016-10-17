@@ -34,15 +34,15 @@ public class DefaultConnection implements IWearableConnection {
         mConnectionChange = connectionCb;
     }
 
-    @Override
-    public void unRegisterConnectionChange(IConnectionChange connectionCb) {
-        mConnectionChange = null;
-    }
-
     protected final void updateConnectionChange() {
         if (mConnectionChange == null) {
             return;
         }
         mConnectionChange.onConnectionChange(mWearConnected, mConnectiontype);
+    }
+
+    @Override
+    public void cleanup() {
+
     }
 }
